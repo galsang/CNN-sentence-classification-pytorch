@@ -30,7 +30,6 @@ def train(train_x, train_y, params, classes, word_idx, lr=0.1):
             loss.backward()
             optimizer.step()
 
-            print(model.parameters().)
 
     return model
 
