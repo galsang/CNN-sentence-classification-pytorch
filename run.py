@@ -18,7 +18,6 @@ def train(data, params):
     criterion = nn.CrossEntropyLoss()
 
     pre_dev_acc = 0
-    dev_count = 0
     for e in range(params["EPOCH"]):
         data["train_x"], data["train_y"] = shuffle(data["train_x"], data["train_y"])
 
@@ -44,13 +43,11 @@ def train(data, params):
                 model.fc.weight.data = model.fc.weight.data * params["NORM_LIMIT"] / model.fc.weight.data.norm()
 
         dev_acc = test(data, model, params, mode="dev")
-        print("epoch:", e+1, "/ dev_acc:", dev_acc)
+        print("epoch:", e + 1, "/ dev_acc:", dev_acc)
 
         if params["EARLY_STOPPING"] and dev_acc <= pre_dev_acc:
-            dev_count += 1
-            if dev_count >= 3:
-                print("early stopping!")
-                break
+            print("early stopping!")
+            break
         else:
             pre_dev_acc = dev_acc
 
