@@ -1,35 +1,37 @@
 from model import CNN
+import utils
 
 from torch.autograd import Variable
 import torch
 import torch.optim as optim
 import torch.nn as nn
 
-import numpy as np
 from sklearn.utils import shuffle
+import numpy as np
+import argparse
 
 
-def train(train_x, train_y, dev_x, dev_y, params):
-    word_idx = params["word_idx"]
-    classes = params["classes"]
-
+def train(data, params):
     model = CNN(**params).cuda()
 
     optimizer = optim.Adadelta(model.parameters(), params["LEARNING_RATE"])
     criterion = nn.CrossEntropyLoss()
 
-    epoch = 0
     pre_dev_acc = 0
-    while(True):
-        epoch += 1
+    dev_count = 0
+    for e in range(params["EPOCH"]):
+        data["train_x"], data["train_y"] = shuffle(data["train_x"], data["train_y"])
 
-        for i in range(0, len(train_x), params["BATCH_SIZE"]):
-            batch_range = min(params["BATCH_SIZE"], len(train_x) - i)
+        for i in range(0, len(data["train_x"]), params["BATCH_SIZE"]):
+            batch_range = min(params["BATCH_SIZE"], len(data["train_x"]) - i)
 
-            batch_x = Variable(torch.LongTensor(
-                [[word_idx[w] for w in sent] + [params["VOCAB_SIZE"] + 1] * (params["MAX_SENT_LEN"] - len(sent))
-                 for sent in train_x[i:i + batch_range]])).cuda()
-            batch_y = Variable(torch.LongTensor([classes.index(c) for c in train_y[i:i + batch_range]])).cuda()
+            batch_x = [[data["word_idx"][w] for w in sent] +
+                       [params["VOCAB_SIZE"] + 1] * (params["MAX_SENT_LEN"] - len(sent))
+                       for sent in data["train_x"][i:i + batch_range]]
+            batch_y = [data["classes"].index(c) for c in data["train_y"][i:i + batch_range]]
+
+            batch_x = Variable(torch.LongTensor(batch_x)).cuda()
+            batch_y = Variable(torch.LongTensor(batch_y)).cuda()
 
             optimizer.zero_grad()
             pred = model(batch_x, is_train=True)
@@ -41,87 +43,100 @@ def train(train_x, train_y, dev_x, dev_y, params):
             if model.fc.weight.norm() > params["NORM_LIMIT"]:
                 model.fc.weight.data = model.fc.weight.data * params["NORM_LIMIT"] / model.fc.weight.data.norm()
 
-        dev_acc = test(dev_x, dev_y, model, params)
-        print("epoch:", epoch, ", acc:", dev_acc)
-        if dev_acc <= pre_dev_acc:
-            print("early stopping!")
-            break
+        dev_acc = test(data, model, params, mode="dev")
+        print("epoch:", e+1, "/ dev_acc:", dev_acc)
+
+        if params["EARLY_STOPPING"] and dev_acc <= pre_dev_acc:
+            dev_count += 1
+            if dev_count >= 3:
+                print("early stopping!")
+                break
         else:
             pre_dev_acc = dev_acc
 
     return model
 
 
-def test(test_x, test_y, model, params):
-    vocab = params["vocab"]
-    word_idx = params["word_idx"]
-    classes = params["classes"]
+def test(data, model, params, mode="test"):
+    if mode == "dev":
+        x, y = data["dev_x"], data["dev_y"]
+    elif mode == "test":
+        x, y = data["test_x"], data["test_y"]
 
-    batch_x = []
-    for sent in test_x:
-        sent_idx = []
-        for w in sent:
-            if w in vocab:
-                sent_idx.append(word_idx[w])
-            else:
-                sent_idx.append(params["VOCAB_SIZE"])
+    x = [[data["word_idx"][w] if w in data["vocab"] else params["VOCAB_SIZE"] for w in sent] +
+         [params["VOCAB_SIZE"] + 1] * (params["MAX_SENT_LEN"] - len(sent))
+         for sent in x]
 
-        sent_idx += [params["VOCAB_SIZE"] + 1] * (params["MAX_SENT_LEN"] - len(sent))
-        batch_x.append(sent_idx)
+    x = Variable(torch.LongTensor(x)).cuda()
+    y = [data["classes"].index(c) for c in y]
 
-    batch_x = Variable(torch.LongTensor(batch_x)).cuda()
-    batch_y = [classes.index(c) for c in test_y]
-
-    pred = np.argmax(model(batch_x).cpu().data.numpy(), axis=1)
-    acc = sum([1 if p == y else 0 for p, y in zip(pred, batch_y)]) / len(pred)
+    pred = np.argmax(model(x).cpu().data.numpy(), axis=1)
+    acc = sum([1 if p == y else 0 for p, y in zip(pred, y)]) / len(pred)
 
     return acc
 
 
-
-def read_data(path):
-    x, y = [], []
-
-    with open(path, "r", encoding="utf-8") as f:
-        for line in f:
-            y.append(line[:-1].split()[0].split(":")[0])
-            x.append(line[:-1].split()[1:])
-
-    return shuffle(x, y)
-
-
 def main():
-    train_x, train_y = read_data("data/TREC/TREC_train.txt")
-    dev_idx = len(train_x)//10
-    dev_x, dev_y, train_x, train_y = train_x[:dev_idx], train_y[:dev_idx], train_x[dev_idx:], train_y[dev_idx:]
-    test_x, test_y = read_data("data/TREC/TREC_test.txt")
+    parser = argparse.ArgumentParser(description="-----[CNN-classifier]-----")
+    parser.add_argument("--mode", default="train", help="train: train(with test) a model / test: test saved models")
+    parser.add_argument("--model", default="rand", help="available models: rand, static, non-static, multichannel")
+    parser.add_argument("--dataset", default="TREC", help="available datasets: MR, TREC")
+    parser.add_argument("--save_model", default="F", help="whether saving model or not (T/F)")
+    parser.add_argument("--early_stopping", default="F", help="whether to apply early stopping(T/F)")
+    parser.add_argument("--epoch", default=10, type=int, help="number of max epoch")
 
-    vocab = sorted(list(set([w for sent in train_x for w in sent])))
-    classes = sorted(list(set(train_y)))
-    word_idx = {w: i for i, w in enumerate(vocab)}
+    options = parser.parse_args()
+    data = getattr(utils, f"read_{options.dataset}")()
+
+    # ToDO: use test data for builing vocab?
+    data["vocab"] = sorted(list(set([w for sent in data["train_x"] + data["dev_x"] + data["test_x"] for w in sent])))
+    data["classes"] = sorted(list(set(data["train_y"])))
+    data["word_idx"] = {w: i for i, w in enumerate(data["vocab"])}
 
     params = {
-        "vocab": vocab,
-        "classes": classes,
-        "word_idx": word_idx,
+        "MODEL": options.model,
+        "DATASET": options.dataset,
+        "SAVE_MODEL": bool(options.save_model == "T"),
+        "EARLY_STOPPING": bool(options.early_stopping == "T"),
+        "EPOCH": options.epoch,
+        # ToDO: use test data for estimating MAX_SENT_LEN?
+        "MAX_SENT_LEN": max([len(sent) for sent in data["train_x"] + data["dev_x"] + data["test_x"]]),
         "BATCH_SIZE": 50,
-        "MAX_SENT_LEN": max([len(sent) for sent in train_x]),
         "WORD_DIM": 300,
         "IN_CHANNEL": 1,
-        "VOCAB_SIZE": len(vocab),
-        "CLASS_SIZE": len(classes),
+        "VOCAB_SIZE": len(data["vocab"]),
+        "CLASS_SIZE": len(data["classes"]),
         "FILTERS": [3, 4, 5],
         "FILTER_NUM": [100, 100, 100],
         "DROPOUT_PROB": 0.5,
         "NORM_LIMIT": 3,
-        "LEARNING_RATE": 0.1
+        "LEARNING_RATE": 0.01
     }
 
-    model = train(train_x, train_y, dev_x, dev_y, params)
-    test_acc = test(test_x, test_y, model, params)
+    print("=" * 20 + "INFORMATION" + "=" * 20)
+    print("MODEL:", params["MODEL"])
+    print("DATASET:", params["DATASET"])
+    print("VOCAB_SIZE:", params["VOCAB_SIZE"])
+    print("EPOCH:", params["EPOCH"])
+    print("EARLY_STOPPING:", params["EARLY_STOPPING"])
+    print("SAVE_MODEL:", params["SAVE_MODEL"])
+    print("=" * 20 + "INFORMATION" + "=" * 20)
+
+    if options.mode == "train":
+        print("=" * 20 + "TRAINING STARTED" + "=" * 20)
+        model = train(data, params)
+        if params["SAVE_MODEL"]:
+            utils.save_model(model, params)
+        print("=" * 20 + "TRAINING FINISHED" + "=" * 20)
+
+    else:
+        model = utils.load_model(params).cuda()
+
+    test_acc = test(data, model, params)
     print("test acc:", test_acc)
+
+    return test_acc
 
 
 if __name__ == "__main__":
-    for i in range(10):
-        main()
+    print("max test acc:", max([main() for i in range(10)]))
