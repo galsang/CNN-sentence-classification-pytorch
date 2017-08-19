@@ -11,8 +11,10 @@ def read_TREC():
 
         with open("data/TREC/TREC_" + mode + ".txt", "r", encoding="utf-8") as f:
             for line in f:
-                y.append(line[:-1].split()[0].split(":")[0])
-                x.append(line[:-1].split()[1:])
+                if line[-1] == "\n":
+                    line = line[:-1]
+                y.append(line.split()[0].split(":")[0])
+                x.append(line.split()[1:])
 
         x, y = shuffle(x, y)
 
@@ -35,12 +37,16 @@ def read_MR():
 
     with open("data/MR/rt-polarity.pos", "r", encoding="utf-8") as f:
         for line in f:
-            x.append(line[:-1].split())
+            if line[-1] == "\n":
+                line = line[:-1]
+            x.append(line.split())
             y.append(1)
 
     with open("data/MR/rt-polarity.neg", "r", encoding="utf-8") as f:
         for line in f:
-            x.append(line[:-1].split())
+            if line[-1] == "\n":
+                line = line[:-1]
+            x.append(line.split())
             y.append(0)
 
     x, y = shuffle(x, y)
@@ -55,13 +61,13 @@ def read_MR():
 
 
 def save_model(model, params):
-    path = f"model/{params['DATASET']}_{params['MODEL']}.pkl"
+    path = f"model/{params['DATASET']}_{params['MODEL']}_{params['EPOCH']}.pkl"
     pickle.dump(model, open(path, "wb"))
     print(f"A model is saved successfully as {path}!")
 
 
 def load_model(params):
-    path = f"model/{params['DATASET']}_{params['MODEL']}.pkl"
+    path = f"model/{params['DATASET']}_{params['MODEL']}_{params['EPOCH']}.pkl"
 
     try:
         model = pickle.load(open(path, "rb"))
