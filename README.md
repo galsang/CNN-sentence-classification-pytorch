@@ -9,17 +9,17 @@ This is the implementation of [Convolutional Neural Networks for Sentence Classi
 Below are results corresponding to all 4 models proposed in the paper for each dataset.
 Experiments have been done with a learning rate = 0.1 up to 300 epochs and all details are tuned to follow the settings defined in the paper. 
 
-(Measure: Acc)
+(Measure: Accuracy)
 
 | Model        | Dataset  | MR   | TREC |
 |--------------|:----------:|:------:|:----:|
-| Rand         | Results  |      | 87.8 |
+| Rand         | Results  | 70.0 | 87.8 |
 |              | Baseline | 76.1 | 91.2 |
-| Static       | Results  |      | **93.8** |
+| Static       | Results  | **82.4** | **93.8** |
 |              | Baseline | 81.0 | 92.8 |
-| Non-static   | Results  |      | **93.6** |
+| Non-static   | Results  | 81.4 | **93.6** |
 |              | Baseline | 81.5 | 93.6 |
-| Multichannel | Results  |      |      |
+| Multichannel | Results  | **81.6** | **92.6** |
 |              | Baseline | 81.1 | 92.2 |
 
 
@@ -44,7 +44,6 @@ Also you should follow library requirements specified in the **requirements.txt*
     numpy==1.12.1
     gensim==2.3.0
     scikit_learn==0.19.0
-    torch==0.1.2.post1
 
 
 ## Execution
