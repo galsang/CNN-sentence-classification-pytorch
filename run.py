@@ -1,4 +1,4 @@
-from models import CNN
+from model import CNN
 import utils
 
 from torch.autograd import Variable
