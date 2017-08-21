@@ -1,4 +1,4 @@
-from model import CNN
+from models import CNN
 import utils
 
 from torch.autograd import Variable
@@ -10,6 +10,7 @@ from sklearn.utils import shuffle
 from gensim.models.keyedvectors import KeyedVectors
 import numpy as np
 import argparse
+import copy
 
 
 def train(data, params):
@@ -77,9 +78,10 @@ def train(data, params):
 
         if test_acc > max_test_acc:
             max_test_acc = test_acc
+            best_model = copy.deepcopy(model)
 
     print("max test acc:", max_test_acc)
-    return model
+    return best_model
 
 
 def test(data, model, params, mode="test"):

@@ -61,13 +61,13 @@ def read_MR():
 
 
 def save_model(model, params):
-    path = f"model/{params['DATASET']}_{params['MODEL']}_{params['EPOCH']}.pkl"
+    path = f"saved_models/{params['DATASET']}_{params['MODEL']}_{params['EPOCH']}.pkl"
     pickle.dump(model, open(path, "wb"))
     print(f"A model is saved successfully as {path}!")
 
 
 def load_model(params):
-    path = f"model/{params['DATASET']}_{params['MODEL']}_{params['EPOCH']}.pkl"
+    path = f"saved_models/{params['DATASET']}_{params['MODEL']}_{params['EPOCH']}.pkl"
 
     try:
         model = pickle.load(open(path, "rb"))
