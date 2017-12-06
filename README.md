@@ -7,7 +7,7 @@ This is the implementation of [Convolutional Neural Networks for Sentence Classi
 ## Results
 
 Below are results corresponding to all 4 models proposed in the paper for each dataset.
-Experiments have been done with a learning rate = ~~0.1~~1 up to ~~300~~100 epochs and all details are tuned to follow the settings defined in the paper. 
+Experiments have been done with a learning rate = ~~0.1~~ 1 up to ~~300~~ 100 epochs and all details are tuned to follow the settings defined in the paper. 
 
 (17.02.06) There was a bug that the best model is selected based on test acc, not on dev acc. The error has been corrected and so do results. Also note that the results can be somewhat different whenever the code is executed. Thanks!
 (WARNING: CV should be performed in case of MR, but only the random selection of dev(10%) and test(10%) set is done for simplicity.)
