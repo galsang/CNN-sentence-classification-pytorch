@@ -7,19 +7,22 @@ This is the implementation of [Convolutional Neural Networks for Sentence Classi
 ## Results
 
 Below are results corresponding to all 4 models proposed in the paper for each dataset.
-Experiments have been done with a learning rate = 0.1 up to 300 epochs and all details are tuned to follow the settings defined in the paper. 
+Experiments have been done with a learning rate = ~~0.1~~1 up to ~~300~~100 epochs and all details are tuned to follow the settings defined in the paper. 
+
+(17.02.06) There was a bug that the best model is selected based on test acc, not on dev acc. The error has been corrected and so do results. Also note that the results can be somewhat different whenever the code is executed. Thanks!
+(WARNING: CV should be performed in case of MR, but only the random selection of dev(10%) and test(10%) set is done for simplicity.)
 
 (Measure: Accuracy)
 
 | Model        | Dataset  | MR   | TREC |
 |--------------|:----------:|:------:|:----:|
-| Rand         | Results  | 70.0 | 87.8 |
+| Rand         | Results  | 67.7 | 88.2 |
 |              | Baseline | 76.1 | 91.2 |
-| Static       | Results  | **82.4** | **93.8** |
+| Static       | Results  | 79.7 | **93.2** |
 |              | Baseline | 81.0 | 92.8 |
-| Non-static   | Results  | 81.4 | **93.6** |
+| Non-static   | Results  | 80.1 | **94.4** |
 |              | Baseline | 81.5 | 93.6 |
-| Multichannel | Results  | **81.6** | **92.6** |
+| Multichannel | Results  | 79.8 | **93.6** |
 |              | Baseline | 81.1 | 92.2 |
 
 
@@ -48,20 +51,25 @@ Also you should follow library requirements specified in the **requirements.txt*
 
 ## Execution
 
-> python run.py 
+> python run.py --help
 
-    usage: run.py [-h] [--mode MODE] [--model MODEL] [--dataset DATASET]
-              [--save_model SAVE_MODEL] [--early_stopping EARLY_STOPPING]
-              [--epoch EPOCH] [--learning_rate LEARNING_RATE]
+	usage: run.py [-h] [--mode MODE] [--model MODEL] [--dataset DATASET]
+				  [--save_model] [--early_stopping] [--epoch EPOCH]
+				  [--learning_rate LEARNING_RATE] [--gpu GPU]
 
-    -----[CNN-classifier]-----
+	-----[CNN-classifier]-----
 
-    optional arguments:
-      -h, --help                        show this help message and exit
-      --mode MODE                       train: train (with test) a model / test: test saved models
-      --model MODEL                     available models: rand, static, non-static, multichannel
-      --dataset DATASET                 available datasets: MR, TREC
-      --save_model SAVE_MODEL           whether saving model or not (T/F)
-      --early_stopping EARLY_STOPPING   whether to apply early stopping(T/F)
-      --epoch EPOCH                     number of max epoch
-      --learning_rate LEARNING_RATE     learning rate
+	optional arguments:
+	  -h, --help            show this help message and exit
+	  --mode MODE           train: train (with test) a model / test: test saved
+							models
+	  --model MODEL         available models: rand, static, non-static,
+							multichannel
+	  --dataset DATASET     available datasets: MR, TREC
+	  --save_model          whether saving model or not
+	  --early_stopping      whether to apply early stopping
+	  --epoch EPOCH         number of max epoch
+	  --learning_rate LEARNING_RATE
+							learning rate
+	  --gpu GPU             the number of gpu to be used
+ 
